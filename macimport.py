@@ -10,18 +10,18 @@ import torch.nn.functional as F
 import sys
 import os
 
-# Device configuration for cross-platform compatibility
+# Configuration de l'appareil pour compatibilité multi-plateforme
 def get_device():
     if torch.cuda.is_available():
         return torch.device("cuda")
-    elif torch.backends.mps.is_available():  # For M1 Mac
+    elif torch.backends.mps.is_available():  # Pour M1 Mac
         return torch.device("mps")
     else:
         return torch.device("cpu")
 
 device = get_device()
 
-# Visualize feature maps
+# Visualisation des cartes de caractéristiques
 def visualize_feature_maps(model, input_tensor, num_feature_maps=16):
     try:
         feature_extractor = nn.Sequential(*list(model.model.children())[:-2])
@@ -38,13 +38,13 @@ def visualize_feature_maps(model, input_tensor, num_feature_maps=16):
         hook.remove()
         
         if not feature_maps:
-            st.error("Failed to extract feature maps.")
+            st.error("Impossible d'extraire les cartes de caractéristiques.")
             return
         
         feature_maps = feature_maps[0]
         
         plt.figure(figsize=(15, 10))
-        plt.suptitle("Feature Maps Visualization", fontsize=16)
+        plt.suptitle("Visualisation des Cartes de Caractéristiques", fontsize=16)
         
         grid_size = int(np.ceil(np.sqrt(min(num_feature_maps, feature_maps.shape[1]))))
         
@@ -54,31 +54,31 @@ def visualize_feature_maps(model, input_tensor, num_feature_maps=16):
             
             plt.subplot(grid_size, grid_size, i+1)
             plt.imshow(feature_map, cmap='viridis')
-            plt.title(f'Feature Map {i+1}')
+            plt.title(f'Carte {i+1}')
             plt.axis('off')
         
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         
-        st.subheader("Feature Maps Analysis")
-        st.write("Visualization of intermediate representations learned by the model:")
+        st.subheader("Analyse des Cartes de Caractéristiques")
+        st.write("Visualisation des représentations intermédiaires apprises par le modèle :")
         st.pyplot(plt)
         
-        st.write("### Interpretation")
+        st.write("### Interprétation")
         st.markdown("""
-        - Each feature map represents a different learned pattern or texture
-        - Brighter areas indicate stronger activations
-        - Early layers capture basic features like edges and colors
-        - Deeper layers capture more complex, abstract representations
+        - Chaque carte représente un motif ou une texture appris différent
+        - Les zones plus lumineuses indiquent des activations plus fortes
+        - Les couches précoces capturent des caractéristiques de base (bords, couleurs)
+        - Les couches profondes capturent des représentations plus complexes
         """)
     
     except Exception as e:
-        st.error(f"Error in feature maps visualization: {e}")
+        st.error(f"Erreur dans la visualisation : {e}")
 
 def add_feature_map_visualization(model, input_tensor):
-    with st.expander("Model Feature Maps"):
+    with st.expander("Cartes de Caractéristiques du Modèle"):
         visualize_feature_maps(model, input_tensor)
 
-# Model definition
+# Définition du modèle
 class YourModel(nn.Module):
     def __init__(self):
         super(YourModel, self).__init__()
@@ -88,21 +88,20 @@ class YourModel(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-# Load model with error handling
+# Chargement du modèle avec gestion d'erreurs
 def load_model(model_path="newer_model.pth"):
     try:
         model = YourModel()
-        # Use map_location to handle different devices
         state_dict = torch.load(model_path, map_location=device)
         model.load_state_dict(state_dict)
         model.to(device)
         model.eval()
         return model
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        st.error(f"Erreur lors du chargement du modèle : {e}")
         return None
 
-# GradCAM implementation
+# Implémentation de GradCAM
 class GradCAM:
     def __init__(self, model, target_layer):
         self.model = model
@@ -123,7 +122,7 @@ class GradCAM:
     
     def generate_cam(self, class_idx):
         if self.gradients is None or self.activations is None:
-            raise ValueError("Gradients or activations not captured.")
+            raise ValueError("Gradients ou activations non capturés.")
         
         gradients = self.gradients.cpu().data.numpy()
         activations = self.activations.cpu().data.numpy()
@@ -142,7 +141,7 @@ class GradCAM:
             handle.remove()
 
 def show_gradcam(model, input_tensor, predicted_class):
-    with st.expander("Grad-CAM Visualization (Model Attention Areas)"):
+    with st.expander("Visualisation Grad-CAM (Zones d'attention)"):
         target_layer = model.model.layer4[-1]
         gradcam = GradCAM(model, target_layer)
         
@@ -166,12 +165,12 @@ def show_gradcam(model, input_tensor, predicted_class):
             
             plt.figure(figsize=(10, 5))
             plt.subplot(1, 2, 1)
-            plt.title("Original Image")
+            plt.title("Image Originale")
             plt.imshow(image_np)
             plt.axis('off')
             
             plt.subplot(1, 2, 2)
-            plt.title("Grad-CAM Activation Map")
+            plt.title("Carte Grad-CAM")
             plt.imshow(image_np)
             plt.imshow(cam_resized, cmap='jet', alpha=0.5)
             plt.axis('off')
@@ -179,19 +178,19 @@ def show_gradcam(model, input_tensor, predicted_class):
             st.pyplot(plt)
             
             st.markdown("""
-            ### Grad-CAM Interpretation
-            - Red/yellow areas indicate regions most influential to the model's decision
-            - More intense colors show higher importance for classification
-            - This tool helps understand which image parts influenced the diagnosis
+            ### Interprétation de Grad-CAM
+            - Les zones rouges/jaunes montrent les régions influençant la décision
+            - Plus la couleur est intense, plus la région est importante
+            - Cet outil explique quelles parties ont influencé le diagnostic
             """)
             
         except Exception as e:
-            st.error(f"Error generating Grad-CAM: {e}")
+            st.error(f"Erreur lors de la génération Grad-CAM : {e}")
         
         finally:
             gradcam.remove_hooks()
 
-# Preprocessing
+# Prétraitement
 def preprocess_image(image):
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -200,27 +199,27 @@ def preprocess_image(image):
     ])
     return transform(image).unsqueeze(0)
 
-# Disease info
+# Informations sur les maladies
 disease_info = {
-    "normal": "The eye appears healthy with no visible signs of infection or abnormality.",
-    "epiphore": "Epiphora is excessive tearing caused by blocked tear ducts or tear overproduction.",
-    "keratite": "Keratitis is corneal inflammation from infection or trauma, requiring prompt medical attention."
+    "normal": "L'œil semble en bonne santé, sans signes visibles d'infection ou d'anomalie.",
+    "epiphore": "L'épiphore est un larmoiement excessif causé par une obstruction des voies lacrymales ou une hyperproduction de larmes.",
+    "keratite": "La kératite est une inflammation de la cornée qui peut résulter d'une infection ou d'un traumatisme. Elle nécessite une intervention médicale rapide."
 }
 
-# Main Streamlit app
+# Application Streamlit principale
 def main():
-    st.title("AI Vision: Preventive Eye Disease Detection")
-    st.write("Upload an eye image to detect potential conditions.")
+    st.title("Vision IA : Détection Préventive des Maladies Oculaires")
+    st.write("Soumettez une image de l'œil pour détecter d'éventuelles pathologies.")
     
     model = load_model()
     if model is None:
         return
     
-    uploaded_file = st.file_uploader("Upload an image...", type=["png", "jpg", "jpeg", "tiff"])
+    uploaded_file = st.file_uploader("Téléchargez une image...", type=["png", "jpg", "jpeg", "tiff"])
     
     if uploaded_file is not None:
         image = Image.open(uploaded_file).convert('RGB')
-        st.image(image, caption="Uploaded Image", use_container_width=True)
+        st.image(image, caption="Image Téléchargée", use_container_width=True)
         
         input_tensor = preprocess_image(image)
         
@@ -232,21 +231,21 @@ def main():
         class_names = ["normal", "epiphore", "keratite"]
         predicted_class_name = class_names[predicted_class]
         
-        st.subheader(f"Prediction: **{predicted_class_name.upper()}**")
-        st.write(f"Confidence: **{probabilities[predicted_class]*100:.2f}%**")
+        st.subheader(f"Prédiction : **{predicted_class_name.upper()}**")
+        st.write(f"Confiance : **{probabilities[predicted_class]*100:.2f}%**")
         
-        st.write("### Class Probabilities:")
+        st.write("### Probabilités par classe :")
         for i, class_name in enumerate(class_names):
-            st.write(f"{class_name.capitalize()}: {probabilities[i]*100:.2f}%")
+            st.write(f"{class_name.capitalize()} : {probabilities[i]*100:.2f}%")
             st.progress(float(probabilities[i]))
         
-        st.write(f"### Information about {predicted_class_name}:")
+        st.write(f"### Information sur {predicted_class_name} :")
         st.write(disease_info[predicted_class_name])
         
         show_gradcam(model, input_tensor, predicted_class)
         add_feature_map_visualization(model, input_tensor)
         
-        st.info("This app is a support tool and not a substitute for medical diagnosis. Consult a healthcare professional if in doubt.")
+        st.info("Cette application est un outil d'aide et ne remplace pas un diagnostic médical. Consultez un professionnel de santé en cas de doute.")
 
 if __name__ == "__main__":
     main()
